@@ -2,29 +2,20 @@
 #include <stdlib.h>
 #include <time.h>
 #include "mapa.h"
+#include "combate.h"  // Para iniciar el combate
 
 
+char mapa[MAPA_ALTO][MAPA_ANCHO];
+int movimientos = 0;
 
+Enemigo enemigos[MAX_ENEMIGOS] = {0};  // Inicializar el personaje vacío
 
-char mapa[MAPA_ALTO][MAPA_ANCHO];  // Mapa global
-int movimientos = 0;               // Contador de movimientos
-
-typedef struct {
-    int x;
-    int y;
-    int activo;  // 1 si el enemigo está activo, 0 si no
-} Enemigo;
-
-Enemigo enemigos[MAX_ENEMIGOS];
-
-// Inicializar el mapa y posiciones de los enemigos
 void inicializar_mundo() {
-    // Mapa predefinido
     char mapa_creado[MAPA_ALTO][MAPA_ANCHO] = {
         {'#', '#', '#', '#', '#', '#', '#', '#', '#', '#'},
         {'#', '.', '.', '.', '.', '.', '.', '.', '.', '#'},
         {'#', '.', '.', '.', '.', '.', '.', '.', '.', '#'},
-        {'#', '.', '.', '#', '#', '#', '#', '.', '.', '#'},
+        {'#', '.', '.', '#', '#', '#', '#', '#', '.', '#'},
         {'#', '.', '.', '#', '.', '.', '.', '#', '.', '#'},
         {'#', '.', '.', '#', '.', '.', '.', '#', '.', '#'},
         {'#', '.', '.', '#', '#', '#', '.', '#', '.', '#'},
@@ -33,43 +24,46 @@ void inicializar_mundo() {
         {'#', '#', '#', '#', '#', '#', '#', '#', '#', '#'}
     };
 
-    // Copia de mapa_creado a mapa
     for (int i = 0; i < MAPA_ALTO; i++) {
         for (int j = 0; j < MAPA_ANCHO; j++) {
             mapa[i][j] = mapa_creado[i][j];
         }
     }
 
-    // Inicializar los enemigos como inactivos
+    // Colocar enemigos
+    srand(time(NULL));
     for (int i = 0; i < MAX_ENEMIGOS; i++) {
-        enemigos[i].activo = 0;
-    }
+        enemigos[i].x = rand() % MAPA_ANCHO;
+        enemigos[i].y = rand() % MAPA_ALTO;
+        enemigos[i].vida = 30;       // Vida inicial del enemigo
+        enemigos[i].fuerza = 10;     // Fuerza del enemigo
+        enemigos[i].activo = 1;
+        }
 }
 
-void mostrar_mapa(int x_personaje, int y_personaje) {
-    clear();  // Limpia la pantalla antes de dibujar el mapa
+void mostrar_mapa(int x_jugador, int y_jugador) {
+    clear();
     for (int i = 0; i < MAPA_ALTO; i++) {
         for (int j = 0; j < MAPA_ANCHO; j++) {
-            if (i == y_personaje && j == x_personaje) {
-                mvaddch(i, j, '@');  // Dibuja el personaje
+            if (i == y_jugador && j == x_jugador) {
+                mvaddch(i, j, '@'); // Personaje
             } else {
                 int es_enemigo = 0;
                 for (int k = 0; k < MAX_ENEMIGOS; k++) {
                     if (enemigos[k].activo && enemigos[k].x == j && enemigos[k].y == i) {
-                        mvaddch(i, j, '$');  // Dibuja al enemigo
+                        mvaddch(i, j, 'E'); // Enemigo
                         es_enemigo = 1;
                         break;
                     }
                 }
                 if (!es_enemigo) {
-                    mvaddch(i, j, mapa[i][j]);  // Dibuja el mapa
+                    mvaddch(i, j, mapa[i][j]);
                 }
             }
         }
     }
     refresh();
 }
-
 void generar_enemigo() {
     for (int i = 0; i < MAX_ENEMIGOS; i++) {
         if (!enemigos[i].activo) {  // Encuentra una posición libre para un nuevo enemigo
@@ -115,7 +109,7 @@ void mover_enemigos(int x_personaje, int y_personaje) {
     }
 }
 
-void comprobar_enemigos_cercanos(int x, int y) {
+void comprobar_enemigos_cercanos(int x, int y, Personaje jugador) {
     for (int i = 0; i < MAX_ENEMIGOS; i++) {
         if (enemigos[i].activo &&
             ((enemigos[i].x == x - 1 && enemigos[i].y == y) ||
@@ -124,13 +118,14 @@ void comprobar_enemigos_cercanos(int x, int y) {
              (enemigos[i].x == x && enemigos[i].y == y + 1))) {
             // Menú de combate si hay enemigo adyacente
             printw("¡Enemigo cercano! Menú de combate.\n");
+            iniciar_combate(jugador, enemigos[i]);
             refresh();
             getch();  // Pausa antes de continuar
         }
     }
 }
 
-void mover_personaje(int *x, int *y, int tecla) {
+void mover_personaje(int *x, int *y, int tecla, Personaje jugador) {
     int nuevo_x = *x, nuevo_y = *y;
 
     switch (tecla) {
@@ -140,11 +135,12 @@ void mover_personaje(int *x, int *y, int tecla) {
         case KEY_RIGHT: nuevo_x++; break;
     }
 
-    // Verifica que el nuevo movimiento no sea hacia una pared
+    // Movimiento válido
     if (mapa[nuevo_y][nuevo_x] != '#') {
         *x = nuevo_x;
         *y = nuevo_y;
         movimientos++;
+
     }
 
     // Generar enemigo cada ciertos movimientos
@@ -156,6 +152,5 @@ void mover_personaje(int *x, int *y, int tecla) {
     mover_enemigos(*x, *y);
 
     // Comprobar si hay enemigos cercanos
-    comprobar_enemigos_cercanos(*x, *y);
+    comprobar_enemigos_cercanos(*x, *y, jugador);
 }
-

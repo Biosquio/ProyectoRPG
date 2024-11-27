@@ -42,16 +42,12 @@ int main() {
                     int posX = 1, posY = 1;  // Posición inicial del personaje
                     int tecla;
 
-                    mostrar_mapa();
-                    mvaddch(posY, posX, '@');  // Colocar el personaje en la posición inicial
-                    refresh();
-
+                    mostrar_mapa(posX, posY);
                     while ((tecla = getch()) != 'q') {  // Presiona 'q' para salir al menú principal
-                        clear();
-                        mostrar_mapa();
-                        mover_personaje(&posX, &posY, tecla);
-                        mvaddch(posY, posX, '@');  // Representación del personaje
-                        refresh();
+                        mover_personaje(&posX, &posY, tecla, jugador);
+
+                        // Actualizar el mapa después del movimiento o combate
+                        mostrar_mapa(posX, posY);
                     }
                 } else {
                     printf("Opción inválida. Volviendo al menú principal.\n");
@@ -78,6 +74,7 @@ int main() {
                 }
                 printf("Saliendo del juego...\n");
                 break;
+
             default:
                 printf("Opción inválida. Intente de nuevo.\n");
         }

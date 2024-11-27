@@ -1,12 +1,17 @@
-// combate.h
-
 #ifndef COMBATE_H
 #define COMBATE_H
 
 #include "personaje.h"
-#include "enemigo.h"
 
-void iniciar_combate(Personaje *jugador, Enemigo *enemigo);
+typedef struct {
+    int x;
+    int y;
+    int vida;
+    int fuerza;
+    int activo;
+    char nombre[20];
+} Enemigo;
 
+void iniciar_combate(Personaje jugador, Enemigo enemigo);
 
 #endif
